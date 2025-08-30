@@ -278,7 +278,10 @@ function fetchLeaderboard() {
 const API_URL = "https://brikky-server.onrender.com/leaderboard"; // replace with your Render URL
 
 function addScoreToLeaderboard(score) {
-    if (!playerName) return;
+    if (!playerName) {
+      playerName = prompt("Enter your name:");
+    }
+
 
     fetch(API_URL, {
         method: "POST",
