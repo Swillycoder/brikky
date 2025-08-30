@@ -35,12 +35,20 @@
             bottom: 20px;
             left: 50%;
             transform: translateX(-50%);
-            }
+            
+            display: flex;          /* arrange children in a row */
+            flex-direction: row;    /* explicitly horizontal */
+            justify-content: center;
+            align-items: center;
+        }
+            
         #controls button {
-            width: 80px;
-            height: 80px;
-            font-size: 28px;
-            margin: 0 10px;
+            width: 15vw;     /* width relative to viewport */
+            height: 15vw;    /* keep square buttons */
+            max-width: 80px;
+            max-height: 80px;
+            font-size: 6vw;  /* scale font with screen */
+            margin: 0 5px;
             border-radius: 50%;
             opacity: 0.7;
         }
