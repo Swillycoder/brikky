@@ -254,6 +254,7 @@ function paddleCollision() {
             bricks = [];
             ball.speed = 0;
             gameState = 'gameOverScreen'
+
         }
     }
 }
@@ -387,6 +388,7 @@ function resetGame() {
   paddle.x = canvas.width / 2 - paddle.width / 2;
   bricks = [];
   nextColorIndex = 0;
+  scoreAddedToLeaderboard = false;
   setupBricks();
 }
 
