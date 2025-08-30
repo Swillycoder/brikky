@@ -275,7 +275,7 @@ function fetchLeaderboard() {
         .catch(err => console.error("Error fetching leaderboard:", err));
 }
 
-const API_URL = "https://brikky-server.onrender.com"; // replace with your Render URL
+const API_URL = "https://brikky-server.onrender.com/leaderboard"; // replace with your Render URL
 
 function addScoreToLeaderboard(score) {
     if (!playerName) return;
