@@ -352,7 +352,7 @@ function UIButton(x, y, width, height, color, text, textSize, image, onClick, sc
 }
 
 let uiButtons = [];
-leaderboardLoaded = false;
+let leaderboardLoaded = false;
 
 function createUIButtons() {
   uiButtons = [
