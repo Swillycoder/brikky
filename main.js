@@ -392,21 +392,6 @@ function resetGame() {
   setupBricks();
 }
 
-function resizeCanvas() {
-  const canvas = document.querySelector('canvas');
-  const ctx = canvas.getContext('2d');
-
-  if (window.innerWidth < 768 && window.innerHeight > window.innerWidth) {
-    // Mobile portrait
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-  } else {
-    // Desktop / landscape: fixed size (example 800x600)
-    canvas.width = 800;
-    canvas.height = 600;
-  }
-}
-
 let lastRowTime = 0;
 const rowInterval = 5000;
 
@@ -585,6 +570,3 @@ document.getElementById("right").addEventListener("touchend", () => movingRight 
 usernameInput.addEventListener("input", () => {
     usernameInput.value = usernameInput.value.toUpperCase().slice(0,5);
 });
-
-window.addEventListener('resize', resizeCanvas);
-resizeCanvas();
