@@ -11,9 +11,9 @@ const transparencyImg = new Image();
 transparencyImg.src = 'glass.png'
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
-//import { getFirestore, collection, addDoc, query, orderBy, limit, getDocs } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
-import { getFirestore, collection, addDoc, getDocs, query, orderBy, limit, onSnapshot } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
-// Firebase config
+
+import { getFirestore, collection, addDoc, getDocs, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+
 const firebaseConfig = {
   apiKey: "AIzaSyDe5c4Ez_16kZXTePJMr2icRMgTJ1WdtmE",
   authDomain: "brikky-abd99.firebaseapp.com",
@@ -40,29 +40,30 @@ async function addScoreToLeaderboard(score) {
   return docRef; // optional, if you want to track the added score
 }
 
-
-
-function listenToLeaderboard() {
+async function fetchLeaderboard() {
   const q = query(
     collection(db, "leaderboard"),
     orderBy("score", "desc"),
     limit(10)
   );
 
-  onSnapshot(q, (snapshot) => {
-      leaderboard = [];
-      snapshot.forEach((doc) => {
-          const data = doc.data();
-          leaderboard.push({
-              name: data.name,
-              score: data.score,
-              timestamp: data.timestamp
-          });
+  try {
+    const snapshot = await getDocs(q);
+    leaderboard = [];
+    snapshot.forEach((doc) => {
+      const data = doc.data();
+      leaderboard.push({
+        name: data.name,
+        score: data.score,
+        timestamp: data.timestamp
       });
-      console.log('Leaderboard array:', leaderboard);
-      leaderboardLoaded = true;
-  });
-};
+    });
+    leaderboardLoaded = true;
+    console.log("Leaderboard array:", leaderboard);
+  } catch (error) {
+    console.error("Error fetching leaderboard:", error);
+  }
+}
 
 class Paddle {
     constructor(x, y, width, height, speed) {
@@ -168,14 +169,8 @@ const paddle = new Paddle((canvas.width - 75) / 2, canvas.height - 20, 75, 10, 5
 let score = 0;
 let leaderboard = [];
 
-let leaderboardLoaded = false;
-let previousState = gameState;
-
 function gameLoop(timestamp) {
-    if (gameState !== previousState) {
-        if (gameState === "leaderBoard") listenToLeaderboard();
-        previousState = gameState;
-    }
+
 
     switch(gameState) {
         case "gameScreen": gameScreen(timestamp); break;
@@ -357,19 +352,25 @@ function UIButton(x, y, width, height, color, text, textSize, image, onClick, sc
 }
 
 let uiButtons = [];
+leaderboardLoaded = false;
 
 function createUIButtons() {
   uiButtons = [
     new UIButton(
       canvas.width / 2 - 125, 250, 250, 75, "green",
       "PLAY", 50, transparencyImg,
-      () => { gameState = "gameScreen"; resetGame(); },
+      () => { 
+              gameState = "gameScreen"; 
+              resetGame(); 
+            },
       "introScreen"
     ),
     new UIButton(
       canvas.width / 2 - 125, 350, 250, 75, "teal",
       "LEADERBOARD", 30, transparencyImg,
-      () => { listenToLeaderboard();
+      () => {
+              leaderboardLoaded = false;
+              fetchLeaderboard();
               gameState = "leaderBoard";
             },
       "introScreen"
@@ -379,18 +380,17 @@ function createUIButtons() {
       canvas.width / 2 - 125, 350, 250, 75, "green",
       "PLAY AGAIN?", 30, transparencyImg,
       () => { 
-        console.log("PLAY AGAIN clicked");
-        resetGame();
-        gameState = "introScreen"; 
-      },
+              console.log("PLAY AGAIN clicked");
+              resetGame();
+              gameState = "introScreen"; 
+            },
       "gameOverScreen"
     ),
 
     new UIButton(
       canvas.width / 2 - 125, 350, 250, 75, "green",
       "BACK", 30, transparencyImg,
-      () => { leaderboardLoaded = false;  // reset for refresh
-              listenToLeaderboard();       // start listening again
+      () => { 
               gameState = "introScreen";  
             },
       "leaderBoard"
@@ -510,6 +510,8 @@ function leaderBoard() {
     return;
   }
 
+  console.log('Rendering leaderboard with entries:', leaderboard.length);
+
   const startY = 80;
   const rowHeight = 25;
   const colX = {
@@ -525,23 +527,23 @@ function leaderBoard() {
 
   ctx.font = '28px pixelPurl';
   for (let i = 0; i < 10; i++) {
-    const entry = leaderboard[i];
-    const y = startY + (i+1)*rowHeight;
-
-    if (entry) {
+    const y = startY + (i + 1) * rowHeight;
+    if (leaderboard[i]) {
+      const entry = leaderboard[i];
       ctx.fillStyle = 'white';
-      ctx.fillText(i+1, colX.place, y);
+      ctx.fillText(i + 1, colX.place, y);
       ctx.fillText(entry.name, colX.name, y);
       ctx.fillText(entry.score, colX.score, y);
     } else {
       ctx.fillStyle = 'rgba(255,255,255,0.3)';
-      ctx.fillText(i+1, colX.place, y);
+      ctx.fillText(i + 1, colX.place, y);
       ctx.fillText('---', colX.name, y);
       ctx.fillText('0', colX.score, y);
       ctx.fillStyle = 'white';
     }
   }
 
+  // Draw buttons for this screen
   uiButtons
     .filter(btn => btn.screen === "leaderBoard")
     .forEach(btn => btn.draw());
@@ -550,7 +552,6 @@ function leaderBoard() {
 
 setupBricks();
 createUIButtons();
-listenToLeaderboard();
 gameLoop();
 
 function getMousePos(evt) {
