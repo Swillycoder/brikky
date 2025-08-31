@@ -252,7 +252,7 @@ function addNewRow() {
       if (brick.status === 1 && brick.y + brick.height >= canvas.height - paddle.height) {
           bricks = [];
           ball.speed = 0;
-          gameState = 'gameOverScreen'
+          endGame();
           return;
       }
     }
@@ -307,10 +307,19 @@ function paddleCollision() {
         } else if (ball.y + ball.dy > canvas.height) {
             bricks = [];
             ball.speed = 0;
-            gameState = 'gameOverScreen'
+            endGame();
 
         }
     }
+}
+
+let gameOverHandled = false;
+
+function endGame() {
+  if (gameOverHandled) return;
+  gameOverHandled = true;
+  gameState = "gameOverScreen";
+  addScoreToLeaderboard(playerName, score);
 }
 
 function gameStats() {
@@ -410,6 +419,7 @@ function handleClick(x, y) {
 }
 
 function resetGame() {
+  gameOverHandled = false;
   score = 0;
   ball.x = canvas.width / 2;
   ball.y = canvas.height - 30;
@@ -420,6 +430,8 @@ function resetGame() {
   scoreAddedToLeaderboard = false;
   setupBricks();
 }
+
+
 
 let lastRowTime = 0;
 const rowInterval = 5000;
@@ -482,13 +494,6 @@ function gameOverScreen() {
   ctx.font = "50px pixelPurl";
   ctx.fillText(playerName, canvas.width/2, 290);
   ctx.fillText(`SCORE - ${score}`, canvas.width/2, 325);
-
-  if (!scoreAddedToLeaderboard) {
-    // Fire-and-forget, but refresh leaderboard immediately
-    addScoreToLeaderboard(score).then(() => {
-      scoreAddedToLeaderboard = true;
-    });
-  }
 
   uiButtons
     .filter(btn => btn.screen === "gameOverScreen")
