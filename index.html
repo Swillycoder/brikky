@@ -13,6 +13,9 @@
         }
         canvas{
             border: 3px solid black;
+            width: 100vw;   /* fills screen width on mobile */
+            height: auto;   /* keep aspect ratio */
+            max-width: 800px;
            
         }
 
@@ -50,7 +53,6 @@
             margin: 0 40px;
             border-radius: 50%;
             opacity: 0.7;
-            -webkit-touch-callout: none;
         }
     </style>
 </head>

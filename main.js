@@ -570,3 +570,7 @@ document.getElementById("right").addEventListener("touchend", () => movingRight 
 usernameInput.addEventListener("input", () => {
     usernameInput.value = usernameInput.value.toUpperCase().slice(0,5);
 });
+
+document.querySelectorAll('#controls button').forEach(btn => {
+  btn.addEventListener('contextmenu', e => e.preventDefault());
+});
