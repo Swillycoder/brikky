@@ -50,13 +50,14 @@ function listenToLeaderboard() {
   );
 
   onSnapshot(q, (snapshot) => {
-    leaderboard = [];
-    snapshot.forEach((doc) => {
-      leaderboard.push(doc.data());
-    });
-    leaderboardLoaded = true; // mark loaded once the first snapshot arrives
+      leaderboard = [];
+      snapshot.forEach((doc) => {
+          console.log(doc.id, doc.data()); // <-- see what Firestore actually returns
+          leaderboard.push(doc.data());
+      });
+      leaderboardLoaded = true;
   });
-}
+};
 
 class Paddle {
     constructor(x, y, width, height, speed) {
