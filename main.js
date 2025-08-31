@@ -52,9 +52,14 @@ function listenToLeaderboard() {
   onSnapshot(q, (snapshot) => {
       leaderboard = [];
       snapshot.forEach((doc) => {
-          console.log(doc.id, doc.data()); // <-- see what Firestore actually returns
-          leaderboard.push(doc.data());
+          const data = doc.data();
+          leaderboard.push({
+              name: data.name,
+              score: data.score,
+              timestamp: data.timestamp
+          });
       });
+      console.log('Leaderboard array:', leaderboard);
       leaderboardLoaded = true;
   });
 };
