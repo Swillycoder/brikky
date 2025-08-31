@@ -10,6 +10,54 @@ wallImg.src = 'brikky.png';
 const transparencyImg = new Image();
 transparencyImg.src = 'glass.png'
 
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+//import { getFirestore, collection, addDoc, query, orderBy, limit, getDocs } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+import { getFirestore, collection, addDoc, getDocs, query, orderBy, limit, onSnapshot } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+// Firebase config
+const firebaseConfig = {
+  apiKey: "AIzaSyDe5c4Ez_16kZXTePJMr2icRMgTJ1WdtmE",
+  authDomain: "brikky-abd99.firebaseapp.com",
+  projectId: "brikky-abd99",
+  storageBucket: "brikky-abd99.firebasestorage.app",
+  messagingSenderId: "1073642598973",
+  appId: "1:1073642598973:web:70c17054fbf578bee5b054",
+  measurementId: "G-ELX4ZQSVW2"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app); // <-- Firestore initialized
+
+async function addScoreToLeaderboard(score) {
+  if (!playerName) playerName = "Player";
+
+  const docRef = await addDoc(collection(db, "leaderboard"), {
+    name: playerName,
+    score: score,
+    timestamp: Date.now()
+  });
+
+  return docRef; // optional, if you want to track the added score
+}
+
+
+
+function listenToLeaderboard() {
+  const q = query(
+    collection(db, "leaderboard"),
+    orderBy("score", "desc"),
+    limit(10)
+  );
+
+  onSnapshot(q, (snapshot) => {
+    leaderboard = [];
+    snapshot.forEach((doc) => {
+      leaderboard.push(doc.data());
+    });
+    leaderboardLoaded = true; // mark loaded once the first snapshot arrives
+  });
+}
+
 class Paddle {
     constructor(x, y, width, height, speed) {
         this.x = x;
@@ -114,15 +162,20 @@ const paddle = new Paddle((canvas.width - 75) / 2, canvas.height - 20, 75, 10, 5
 let score = 0;
 let leaderboard = [];
 
+let leaderboardLoaded = false;
+let previousState = gameState;
+
 function gameLoop(timestamp) {
-    if (gameState === "gameScreen") {
-        gameScreen(timestamp);
-    } else if (gameState === 'introScreen'){
-      introScreen();
-    } else if (gameState === 'gameOverScreen') {
-      gameOverScreen();
-    } else if (gameState === 'leaderBoard') {
-      leaderBoard();
+    if (gameState !== previousState) {
+        if (gameState === "leaderBoard") listenToLeaderboard();
+        previousState = gameState;
+    }
+
+    switch(gameState) {
+        case "gameScreen": gameScreen(timestamp); break;
+        case "introScreen": introScreen(); break;
+        case "gameOverScreen": gameOverScreen(); break;
+        case "leaderBoard": leaderBoard(); break;
     }
 
     requestAnimationFrame(gameLoop);
@@ -266,39 +319,6 @@ function gameStats() {
     ctx.fillText(`SCORE - ${score}`, canvas.width/2, 14);
 }
 
-function fetchLeaderboard() {
-    fetch(API_URL)
-        .then(response => response.json())
-        .then(scores => {
-            console.log("Fetched leaderboard:", scores);
-            leaderboard = scores;
-        })
-        .catch(err => console.error("Error fetching leaderboard:", err));
-}
-
-const API_URL = "https://brikky-server.onrender.com/leaderboard"; // replace with your Render URL
-
-function addScoreToLeaderboard(score) {
-    if (!playerName) {
-      playerName = prompt("Enter your name:");
-    }
-
-
-    fetch(API_URL, {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ name: playerName, score: score })
-    })
-    .then(response => response.json())
-    .then(data => {
-        console.log("Score submitted:", data);
-        fetchLeaderboard();
-    })
-    .catch(err => console.error("Error submitting score:", err));
-}
-
 function UIButton(x, y, width, height, color, text, textSize, image, onClick, screen) {
   this.x = x;
   this.y = y;
@@ -343,7 +363,7 @@ function createUIButtons() {
     new UIButton(
       canvas.width / 2 - 125, 350, 250, 75, "teal",
       "LEADERBOARD", 30, transparencyImg,
-      () => { fetchLeaderboard();
+      () => { listenToLeaderboard();
               gameState = "leaderBoard";
             },
       "introScreen"
@@ -363,7 +383,10 @@ function createUIButtons() {
     new UIButton(
       canvas.width / 2 - 125, 350, 250, 75, "green",
       "BACK", 30, transparencyImg,
-      () => { gameState = "introScreen"; resetGame(); },
+      () => { leaderboardLoaded = false;  // reset for refresh
+              listenToLeaderboard();       // start listening again
+              gameState = "introScreen";  
+            },
       "leaderBoard"
     )
   ];
@@ -439,15 +462,15 @@ function introScreen() {
 let scoreAddedToLeaderboard = false;
 
 function gameOverScreen() {
-  ctx.clearRect(0,0,canvas.width, canvas.height);
-  ctx.drawImage(wallImg,0,0);
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.drawImage(wallImg, 0, 0);
+
   ctx.fillStyle = 'white';
   ctx.font = '50px pixelPurl';
   ctx.textAlign = 'center';
-  ctx.fillText('THANKS FOR PLAYING', canvas.width/2, 40)
-  ctx.fillStyle = 'white';
+  ctx.fillText('THANKS FOR PLAYING', canvas.width/2, 40);
+
   ctx.font = '80px pixelPurl';
-  ctx.textAlign = 'center';
   ctx.fillText('GAME OVER', canvas.width/2, 244);
 
   ctx.font = "50px pixelPurl";
@@ -455,22 +478,31 @@ function gameOverScreen() {
   ctx.fillText(`SCORE - ${score}`, canvas.width/2, 325);
 
   if (!scoreAddedToLeaderboard) {
-        addScoreToLeaderboard(score);
-        scoreAddedToLeaderboard = true;
+    // Fire-and-forget, but refresh leaderboard immediately
+    addScoreToLeaderboard(score).then(() => {
+      scoreAddedToLeaderboard = true;
+    });
   }
+
   uiButtons
     .filter(btn => btn.screen === "gameOverScreen")
     .forEach(btn => btn.draw());
-
 }
 
 function leaderBoard() {
-  ctx.clearRect(0,0,canvas.width, canvas.height);
-  ctx.drawImage(wallImg,0,0);
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.drawImage(wallImg, 0, 0);
+
   ctx.fillStyle = 'white';
   ctx.font = '60px pixelPurl';
   ctx.textAlign = 'center';
   ctx.fillText('LEADERBOARD', canvas.width/2, 40);
+
+  if (!leaderboardLoaded) {
+    ctx.font = '30px pixelPurl';
+    ctx.fillText('Loading...', canvas.width/2, canvas.height/2);
+    return;
+  }
 
   const startY = 80;
   const rowHeight = 25;
@@ -481,7 +513,6 @@ function leaderBoard() {
   };
 
   ctx.font = '30px pixelPurl';
-  ctx.textAlign = 'center';
   ctx.fillText('PLACE', colX.place, startY);
   ctx.fillText('NAME', colX.name, startY);
   ctx.fillText('SCORE', colX.score, startY);
@@ -497,7 +528,6 @@ function leaderBoard() {
       ctx.fillText(entry.name, colX.name, y);
       ctx.fillText(entry.score, colX.score, y);
     } else {
-
       ctx.fillStyle = 'rgba(255,255,255,0.3)';
       ctx.fillText(i+1, colX.place, y);
       ctx.fillText('---', colX.name, y);
@@ -511,8 +541,10 @@ function leaderBoard() {
     .forEach(btn => btn.draw());
 }
 
+
 setupBricks();
 createUIButtons();
+listenToLeaderboard();
 gameLoop();
 
 function getMousePos(evt) {
