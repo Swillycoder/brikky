@@ -319,7 +319,7 @@ function endGame() {
   if (gameOverHandled) return;
   gameOverHandled = true;
   gameState = "gameOverScreen";
-  addScoreToLeaderboard(playerName, score);
+  addScoreToLeaderboard(score);
 }
 
 function gameStats() {
